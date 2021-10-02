@@ -861,6 +861,7 @@ void LAMMPS::post_create()
       if (strcmp(suffix2,"omp") == 0) input->one("package omp 0");
     }
   }
+  input->one("plugin load libdeepmd_lmp.so");
 
   // invoke any command-line package commands
 
