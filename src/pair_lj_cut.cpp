@@ -89,7 +89,7 @@ void PairLJCut::compute(int eflag, int vflag)
   firstneigh = list->firstneigh;
 
   // loop over neighbors of my atoms
-
+  printf("ii ilist[ii] numneigh[i]\n");
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
     xtmp = x[i][0];
@@ -98,9 +98,14 @@ void PairLJCut::compute(int eflag, int vflag)
     itype = type[i];
     jlist = firstneigh[i];
     jnum = numneigh[i];
+    
+    printf("%d %d %d ", ii, i, jnum);
 
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
+      if(update->ntimestep==55 && ii==0){
+        printf("%d ", j);
+      }
       factor_lj = special_lj[sbmask(j)];
       j &= NEIGHMASK;
 
@@ -133,6 +138,8 @@ void PairLJCut::compute(int eflag, int vflag)
         if (evflag) ev_tally(i, j, nlocal, newton_pair, evdwl, 0.0, fpair, delx, dely, delz);
       }
     }
+
+    printf("\n");
   }
 
   if (vflag_fdotr) virial_fdotr_compute();

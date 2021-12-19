@@ -53,6 +53,7 @@ class FixDPPimd : public Fix {
   int barostat;
   int integrator;
   int ensemble;
+  int mapflag;
   int removecomflag;
   void remove_com_motion(); double masstotal;
 

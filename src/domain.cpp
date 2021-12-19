@@ -1357,6 +1357,8 @@ void Domain::remap(double *x, imageint &image)
   double lamda[3];
   imageint idim,otherdims;
 
+  fprintf(stdout, "in remap, image=%d, xbox=%d, ybox=%d, zbox=%d.\n", image, (image & IMGMASK) - IMGMAX, (image >> IMGBITS & IMGMASK) - IMGMAX, (image >> IMG2BITS) - IMGMAX);
+    fprintf(stdout, "%.8e %.8e %.8e\n", x[0], x[1], x[2]);
   if (triclinic == 0) {
     lo = boxlo;
     hi = boxhi;
@@ -1431,6 +1433,8 @@ void Domain::remap(double *x, imageint &image)
   }
 
   if (triclinic) lamda2x(coord,x);
+    fprintf(stdout, "%.8e %.8e %.8e\n", x[0], x[1], x[2]);
+  fprintf(stdout, "image=%d, xbox=%d, ybox=%d, zbox=%d.\n\n", image, (image & IMGMASK) - IMGMAX, (image >> IMGBITS & IMGMASK) - IMGMAX, (image >> IMG2BITS) - IMGMAX);
 }
 
 /* ----------------------------------------------------------------------
@@ -1567,16 +1571,19 @@ void Domain::unmap(double *x, imageint &image)
   int zbox = (image >> IMG2BITS) - IMGMAX;
 
   if (triclinic == 0) {
-    //fprintf(stdout, "in unmap, image=%d, xbox=%d, ybox=%d, zbox=%d.\n", image, xbox, ybox, zbox);
+    fprintf(stdout, "in unmap, image=%d, xbox=%d, ybox=%d, zbox=%d.\n", image, xbox, ybox, zbox);
+    fprintf(stdout, "%.8e %.8e %.8e\n", x[0], x[1], x[2]);
     x[0] += xbox*xprd;
     x[1] += ybox*yprd;
     x[2] += zbox*zprd;
+    fprintf(stdout, "%.8e %.8e %.8e\n", x[0], x[1], x[2]);
   } else {
     x[0] += h[0]*xbox + h[5]*ybox + h[4]*zbox;
     x[1] += h[1]*ybox + h[3]*zbox;
     x[2] += h[2]*zbox;
   }
   image -= (pow(2, 0) * xbox + pow(2, IMGBITS) * ybox + pow(2, IMG2BITS) * zbox);
+  fprintf(stdout, "image=%d, xbox=%d, ybox=%d, zbox=%d.\n\n", image, (image & IMGMASK) - IMGMAX, (image >> IMGBITS & IMGMASK) - IMGMAX, (image >> IMG2BITS) - IMGMAX);
 }
 
 /* ----------------------------------------------------------------------

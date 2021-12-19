@@ -49,6 +49,7 @@ enum{PIMD,NMPIMD,CMD};
 enum{physical, normal};
 enum{baoab, obabo};
 enum{SVR, PILE_L, PILE_G};
+enum{MTTK, BZP};
 enum{nve, nvt, nph, npt};
 enum{MSTI, SCTI};
 
@@ -64,6 +65,7 @@ FixDPPimd::FixDPPimd(LAMMPS *lmp, int narg, char **arg) :
   fmmode        = physical;
   integrator    = obabo;
   thermostat    = PILE_L;
+  barostat      = BZP;
   ensemble      = nvt;
   fmass         = 1.0;
   temp          = 298.15;
@@ -137,18 +139,6 @@ FixDPPimd::FixDPPimd(LAMMPS *lmp, int narg, char **arg) :
       if(temp<0.0) error->universe_all(FLERR,"Invalid temp value for fix pimd");
     } 
 
-    else if(strcmp(arg[i], "press")==0)
-    {
-      Pext = atof(arg[i+1]);
-      if(Pext<0.0) error->universe_all(FLERR,"Invalid press value for fix pimd");
-    }
-
-    else if(strcmp(arg[i], "taup")==0)
-    {
-      tau_p = atof(arg[i+1]);
-      if(tau_p<=0.0) error->universe_all(FLERR, "Invalid tau_p value for fix pimd");
-    }
-
     else if(strcmp(arg[i], "thermostat")==0)
     {
       if(strcmp(arg[i+1],"PILE_G")==0) 
@@ -177,6 +167,31 @@ FixDPPimd::FixDPPimd(LAMMPS *lmp, int narg, char **arg) :
       tau = atof(arg[i+1]);
     }
   
+    else if(strcmp(arg[i], "press")==0)
+    {
+      Pext = atof(arg[i+1]);
+      if(Pext<0.0) error->universe_all(FLERR,"Invalid press value for fix pimd");
+    }
+
+    else if(strcmp(arg[i], "barostat")==0)
+    {
+      if(strcmp(arg[i+1],"MTTK")==0) 
+      {
+        barostat = MTTK;
+      }
+      else if(strcmp(arg[i+1],"BZP")==0)
+      {
+        barostat = BZP;
+      }
+      else error->universe_all(FLERR,"Unknown barostat parameter for fix pimd");
+    }
+
+    else if(strcmp(arg[i], "taup")==0)
+    {
+      tau_p = atof(arg[i+1]);
+      if(tau_p<=0.0) error->universe_all(FLERR, "Invalid tau_p value for fix pimd");
+    }
+
     else if(strcmp(arg[i], "ti")==0)
     {
       tiflag = 1;
@@ -199,8 +214,16 @@ FixDPPimd::FixDPPimd(LAMMPS *lmp, int narg, char **arg) :
       if(strcmp(arg[i+1], "yes")==0) removecomflag = 1;
       else if(strcmp(arg[i+1], "no")==0) removecomflag = 0;
     }
+
+    else if(strcmp(arg[i], "map")==0)
+    {
+      if(strcmp(arg[i+1], "yes")==0) mapflag = 1;
+      else if(strcmp(arg[i+1], "no")==0) mapflag = 0;
+    }
     else error->universe_all(arg[i],i+1,"Unknown keyword for fix pimd");
   }
+
+
 
   // initialize Marsaglia RNG with processor-unique seed
 
@@ -445,7 +468,8 @@ void FixDPPimd::init()
     //W = 4 * tau_p * tau_p / beta_np;
     //printf("N=%d, tau_p=%f, beta=%f, W=%f\n", atom->natoms, tau_p, beta_np, W);
     // Vcoeff = -1.0;
-    Vcoeff = 1.0;
+    if(removecomflag) Vcoeff = 2.0;
+    else if(!removecomflag) Vcoeff = 1.0;
     vw = 0.0;
   }
 
@@ -518,12 +542,17 @@ void FixDPPimd::initial_integrate(int /*vflag*/)
 {
   // unmap the atom coordinates and image flags so that the ring polymer is not wrapped
   int nlocal = atom->nlocal;
+  tagint *tag = atom->tag;
   double **x = atom->x;
   imageint *image = atom->image;
-  // for(int i=0; i<nlocal; i++)
-  // {
-  //   domain->unmap(x[i], image[i]);
-  // }
+
+  if(mapflag){
+    for(int i=0; i<nlocal; i++)
+    {
+      fprintf(stdout, "i=%d, tag=%d\n", i, tag[i]);
+      domain->unmap(x[i], image[i]);
+    }
+  }
   
   if(integrator==obabo)
   {
@@ -567,6 +596,7 @@ void FixDPPimd::initial_integrate(int /*vflag*/)
 
 void FixDPPimd::post_integrate()
 {
+
   if(integrator==baoab || integrator==obabo)
   {
     qc_step();
@@ -599,14 +629,48 @@ void FixDPPimd::post_integrate()
 
     int nlocal = atom->nlocal;
     double **x = atom->x;
+    tagint *tag = atom->tag;
     imageint *image = atom->image;
 
     // remap the atom coordinates and image flags so that all the atoms are in the box and domain->pbc() does not change their coordinates
-    // for(int i=0; i<nlocal; i++)
-    // {
-    //   domain->remap(x[i], image[i]);
-    // }
-  
+
+    if(mapflag)
+    {
+      printf("REMAPPING!\n");
+      for(int i=0; i<nlocal; i++)
+      {
+        fprintf(stdout, "i=%d, tag=%d\n", i, tag[i]);
+        domain->remap(x[i], image[i]);
+      }
+    }
+
+    printf("\nafter remapping:\n");
+    printf("step=%d\n", update->ntimestep);
+    for(int i=0; i<nlocal; i++)
+    {
+      fprintf(stdout, "i=%d, tag=%d, x=%.8e %.8e %.8e, image=%d %d %d\n", i, tag[i], x[i][0], x[i][1], x[i][2], (image[i] & IMGMASK) - IMGMAX, (image[i] >> IMGBITS & IMGMASK) - IMGMAX, (image[i] >> IMG2BITS) - IMGMAX);
+    }
+    printf("\n");
+
+    double xnorm1=0.0, xnorm2=0.0, xnorm3=0.0, xnorm4=0.0;
+    for(int i=0; i<nlocal; i++)
+    {
+      for(int j=0; j<3; j++)
+      {
+        xnorm1 += abs(atom->x[i][j]);
+        xnorm2 += atom->x[i][j] * atom->x[i][j];
+      }
+    }
+
+    for(int i=0; i<nlocal+atom->nghost; i++)
+    {
+      for(int j=0; j<3; j++)
+      {
+        xnorm3 += abs(atom->x[i][j]);
+        xnorm4 += atom->x[i][j] * atom->x[i][j];
+      }
+    }
+    printf("step=%d, %.8e %.8e %.8e %.8e\n", update->ntimestep, xnorm1, xnorm2, xnorm3, xnorm4);
   }
 
   else
@@ -864,6 +928,28 @@ void FixDPPimd::qc_step(){
     double expv = exp(-dtv * vw);
     if(universe->iworld == 0)
     {
+      if(barostat == BZP)
+      {
+        for(int i=0; i<nlocal; i++)
+        {
+          for(int j=0; j<3; j++)
+          {
+            x[i][j] = expq * x[i][j] + (expq - expv) / 2. / vw * v[i][j];
+            v[i][j] = expv * v[i][j];
+          } 
+        }
+      }
+      else if(barostat == MTTK)
+      {
+        for(int i=0; i<nlocal; i++)
+        {
+          for(int j=0; j<3; j++)
+          {
+            x[i][j] = expq * x[i][j] + (expq - expv) / 2. / vw * v[i][j];
+            v[i][j] = exp(-dtv * vw * (1 + 1. / atom->natoms)) * v[i][j];
+          } 
+        }       
+      }
 
       // printf("in qc_step, v:\n");
       // for(int i=0; i<nlocal; i++)
@@ -877,14 +963,6 @@ void FixDPPimd::qc_step(){
       // }
       // printf("\n");
 
-      for(int i=0; i<nlocal; i++)
-      {
-        for(int j=0; j<3; j++)
-        {
-          x[i][j] = expq * x[i][j] + (expq - expv) / 2. / vw * v[i][j];
-          v[i][j] = expv * v[i][j];
-        } 
-      }
     }
     domain->xprd *= expq;
     domain->yprd *= expq;
@@ -1032,22 +1110,35 @@ void FixDPPimd::press_v_step()
   double **v = atom->v;
   int *type = atom->type; 
   double volume = domain->xprd * domain->yprd * domain->zprd;
-  vw += dtv * 3 * (volume * np * (p_cv - Pext) + Vcoeff / beta_np) / W;
-  // printf("iworld = %d, p_cv = %.6e, Pext = %.6e, beta_np = %.6e, W = %.6e.\n", universe->iworld, np*p_cv, Pext, beta_np, W);
-  // printf("iworld = %d, after adding kinetic part, pw = %.8e.\n", universe->iworld, vw*W);
-  if(universe->iworld==0){
-    double dvw_proc = 0.0, dvw = 0.0;
-    for(int i = 0; i < nlocal; i++)
+
+  if(barostat == BZP)
+  {
+    vw += dtv * 3 * (volume * np * (p_cv - Pext) + Vcoeff / beta_np) / W;
+    // printf("iworld = %d, p_cv = %.6e, Pext = %.6e, beta_np = %.6e, W = %.6e.\n", universe->iworld, np*p_cv, Pext, beta_np, W);
+    // printf("iworld = %d, after adding kinetic part, pw = %.8e.\n", universe->iworld, vw*W);
+    if(universe->iworld==0)
     {
-      for(int j = 0; j < 3; j++)
+      double dvw_proc = 0.0, dvw = 0.0;
+      for(int i = 0; i < nlocal; i++)
       {
-        dvw_proc += dtv2 * f[i][j] * v[i][j] / W + dtv3 * f[i][j] * f[i][j] / mass[type[i]] / W;
+        for(int j = 0; j < 3; j++)
+        {
+          dvw_proc += dtv2 * f[i][j] * v[i][j] / W + dtv3 * f[i][j] * f[i][j] / mass[type[i]] / W;
+        }
       }
+      MPI_Allreduce(&dvw_proc, &dvw, 1, MPI_DOUBLE, MPI_SUM, world);
+      vw += dvw;
     }
-    MPI_Allreduce(&dvw_proc, &dvw, 1, MPI_DOUBLE, MPI_SUM, world);
-    vw += dvw;
+    MPI_Bcast(&vw, 1, MPI_DOUBLE, 0, universe->uworld);
   }
-  MPI_Bcast(&vw, 1, MPI_DOUBLE, 0, universe->uworld);
+  else if(barostat == MTTK)
+  {
+    if(universe->iworld==0)
+    {
+      vw += dtv * (3 * volume * np * (p_cv - Pext) + 1. / atom->natoms * 2 * ke_bead) / W;
+    }
+    MPI_Bcast(&vw, 1, MPI_DOUBLE, 0, universe->uworld);
+  }
   // printf("iworld = %d, ending press_v_step, pw = %.8e.\n", universe->iworld, vw*W);
 }
 
@@ -1772,7 +1863,8 @@ void FixDPPimd::compute_tote()
 void FixDPPimd::compute_totenthalpy()
 {
   double volume = domain->xprd * domain->yprd * domain->zprd;
-  totenthalpy = tote + 0.5*W*vw*vw + Pext * volume - Vcoeff/beta_np * log(volume);
+  if(barostat == BZP)  totenthalpy = tote + 0.5*W*vw*vw + Pext * volume - Vcoeff/beta_np * log(volume);
+  else if(barostat == MTTK)  totenthalpy = tote + 0.5*W*vw*vw + Pext * volume;
   //totenthalpy = tote + 0.5*W*vw*vw + Pext * volume ;
   //totenthalpy = tote + 0.5*W*vw*vw + Pext * vol_ ;
   //printf("vol=%f, enth=%f.\n", volume, totenthalpy);
