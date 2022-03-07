@@ -74,11 +74,10 @@ class FixDPPimd : public Fix {
   /* inter-partition communication */
 
   int max_nsend;
-  tagint* tag_send;
-  double *buf_send;
+  tagint *tag_search, *tag_send, *tag_recv;
+  double *buf_send, *buf_recv, **buf_beads;
 
   int max_nlocal;
-  double *buf_recv, **buf_beads;
 
   int size_plan;
   int *plan_send, *plan_recv;
@@ -88,7 +87,7 @@ class FixDPPimd : public Fix {
   void comm_exec(double **);
 
   double **coords, **forces;
-  int nsend, nrecv;
+  int nsearch, nfound, nsend, nrecv;
   tagint* tags_send;
   double *coords_send, *coords_recv;
   double *forces_send, *forces_recv;
@@ -100,12 +99,15 @@ class FixDPPimd : public Fix {
   double inv_volume = 0.0, vol_ = 0.0, vol0 = 0.0;
   double volume = 0.0;
   double *xc, *fc;
+  int n_unwrap;
+  double *x_unwrap;
+  void update_x_unwrap();
   void compute_xc();
   void compute_fc();
   void compute_vir();
   void compute_vir_();
-  double xf, vir, xcfc, centroid_vir, t_vir, t_cv, p_vir, p_cv;
-  double vir_, xcf;
+  double xf, vir, xcfc, centroid_vir, t_vir, t_cv, p_vir, p_cv, p_cv_, p_md;
+  double vir_, xcf, vir2;
   
   void compute_t_vir();  // centroid-virial kinetic energy estimator
   void compute_p_cv();  // centroid-virial pressure estimator
@@ -126,8 +128,6 @@ class FixDPPimd : public Fix {
   void nmpimd_init();
   void nmpimd_fill(double**);
   void nmpimd_transform(double**, double**, double*);
-
-  double **x_unwrap;
 
   /* Langevin thermostat BAOAB integration */
 
@@ -159,12 +159,17 @@ class FixDPPimd : public Fix {
   
   /* Bussi-Zykova-Parrinello barostat */
 
+  double *omega_dot;
+  double f_omega, mtk_term1;
   void press_v_step();
+  void v_press_step();
+  void x_press_step();
+  void press_remap();
   //void press_x_step();
   void qc_step();
   void press_o_step();
   int pextflag;
-  double W, tau_p, vw, Pext, totenthalpy, Vcoeff;
+  double W, tau_p, vw = 0.0, Pext, totenthalpy = 0.0, Vcoeff;
   void compute_totenthalpy();
 
   /* harmonic oscillator model system */
@@ -180,11 +185,16 @@ class FixDPPimd : public Fix {
   void compute_tote();
 
   /* add a new compute pe to compute pote */
+  char *id_temp;
   char *id_pe;
   char *id_press;
+  char *id_press2;
+  class Compute *c_temp;
   class Compute *c_pe;
   class Compute *c_press;
+  class Compute *c_press2;
   double virial[9];
+  double tdof, t_current;
 
   /* thermodynamic integration */
   int tiflag;
