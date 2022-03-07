@@ -21,6 +21,8 @@ FixStyle(dp_pimd,FixDPPimd)
 #define FIX_DP_PIMD_H
 
 #include "fix.h"
+#include <cstdio>
+#include <fstream>
 
 namespace LAMMPS_NS {
 
@@ -41,13 +43,14 @@ class FixDPPimd : public Fix {
   void end_of_step();
 
   double compute_vector(int);
-  double compute_scalar();
+//   double compute_scalar();
 
-
+  // std::fstream flog;
+  // FILE * flog;
   int method, fmmode;
   int np;
   double inverse_np;
-  double temp, beta_np;
+  double temp, hbar, kBT, beta, beta_np;
   int thermostat;
   int barostat;
   int integrator;
@@ -94,7 +97,8 @@ class FixDPPimd : public Fix {
   void comm_forces();
 
   /* centroid-virial estimator computation */
-  double inv_volume, vol_;
+  double inv_volume = 0.0, vol_ = 0.0, vol0 = 0.0;
+  double volume = 0.0;
   double *xc, *fc;
   void compute_xc();
   void compute_fc();
@@ -168,8 +172,8 @@ class FixDPPimd : public Fix {
   double omega;
 
   /* potential energy and total energy of the extended system */
-  double pote, tote, totke;
-  double ke_bead, pe_bead, pot_energy_partition;
+  double kine, pote, tote, totke;
+  double ke_bead, se_bead, pe_bead, pot_energy_partition;
   
   void compute_totke();
   void compute_pote();
