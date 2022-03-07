@@ -2091,9 +2091,12 @@ int Neighbor::decide()
 
   ago++;
   if (ago >= delay && ago % every == 0) {
+    printf("step=%d, checking\n", update->ntimestep);
     if (build_once) return 0;
     if (dist_check == 0) return 1;
+    printf("checking distance\n");
     return check_distance();
+    printf("distance checked!\n");
   } else return 0;
 }
 
@@ -2113,6 +2116,8 @@ int Neighbor::check_distance()
 {
   double delx,dely,delz,rsq;
   double delta,deltasq,delta1,delta2;
+
+  if(update->ntimestep==55) printf("boxcheck=%d\n", boxcheck);
 
   if (boxcheck) {
     if (triclinic == 0) {
@@ -2144,6 +2149,8 @@ int Neighbor::check_distance()
     }
   } else deltasq = triggersq;
 
+  if(update->ntimestep==55) printf("deltasq=%.8e\n", deltasq);
+
   double **x = atom->x;
   int nlocal = atom->nlocal;
   if (includegroup) nlocal = atom->nfirst;
@@ -2154,7 +2161,19 @@ int Neighbor::check_distance()
     dely = x[i][1] - xhold[i][1];
     delz = x[i][2] - xhold[i][2];
     rsq = delx*delx + dely*dely + delz*delz;
-    if (rsq > deltasq) flag = 1;
+    if (rsq > deltasq) 
+    {
+      flag = 1; 
+      printf("i=%d, tag=%d, rsq=%.8e\n", i, atom->tag[i], rsq);
+      printf("%.8e, %.8e, %.8e\n", x[i][0], x[i][1], x[i][2]);
+      printf("%.8e, %.8e, %.8e\n", xhold[i][0], xhold[i][1], xhold[i][2]);
+    }
+    if(i==129)
+    {
+      printf("\ni=%d, tag=%d, rsq=%.8e\n", i, atom->tag[i], rsq);
+      printf("%.8e, %.8e, %.8e\n", x[i][0], x[i][1], x[i][2]);
+      printf("%.8e, %.8e, %.8e\n", xhold[i][0], xhold[i][1], xhold[i][2]);      
+    }
   }
 
   int flagall;

@@ -258,6 +258,7 @@ void Verlet::run(int n)
     // regular communication vs neighbor list rebuild
 
     nflag = neighbor->decide();
+    printf("step=%d, decide=%d\n", update->ntimestep, nflag);
 
     if (nflag == 0) {
       timer->stamp();
