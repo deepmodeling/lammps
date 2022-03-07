@@ -600,8 +600,6 @@ void FixDPPimd::initial_integrate(int /*vflag*/)
     double vnorm1 = 0.0, vnorm2 = 0.0, vnorm1a = 0.0; 
     double xnorm1 = 0.0, xnorm2 = 0.0, xnorm1a = 0.0; 
 
-
-
   // unmap the atom coordinates and image flags so that the ring polymer is not wrapped
   int nlocal = atom->nlocal;
   tagint *tag = atom->tag;
@@ -1381,6 +1379,46 @@ void FixDPPimd::b_step()
 
 /* ---------------------------------------------------------------------- */
 
+void FixDPPimd::v_press_step(){
+  // printf("vw = %.30e\nfactor = %.30e\n", vw, vw * (1 + 1. / atom->natoms));
+  int nlocal = atom->nlocal;
+  double **v = atom->v;
+  // if(universe->iworld == 0)
+  // {
+    // double expv = exp(-0.25 * dtv * vw * (1 + 1. / atom->natoms / np));
+    double expv = exp(-0.5 * dtv * vw * (1 + 1. / atom->natoms / np));
+    for(int i=0; i<nlocal; i++)
+    {
+      for(int j=0; j<3; j++)
+      {
+        // v[i][j] = exp(-dtv * vw * (1 + 1. / atom->natoms)) * v[i][j];
+        v[i][j] = expv * v[i][j];
+        // v[i][j] = expv * v[i][j];
+      } 
+    }       
+  // }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixDPPimd::x_press_step(){
+  // if(universe->iworld == 0)
+  // {
+  //   for(int j=0; j<3; j++)
+  //   {
+  //     vnorm1 += atom->v[i][j];
+  //     vnorm2 += atom->v[i][j] * atom->v[i][j];
+  //   }
+  // }
+
+  // printf("end b_step, v:\n");
+  // printf("vnorm1: %.16e\n", vnorm1);
+  // printf("vnorm2: %.16e\n", vnorm2);
+
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixDPPimd::qc_step(){
   // if(universe->iworld==0) printf("\nstart qc_step, vol = %.8e h = (%.8e %.8e %.8e)\n", domain->xprd*domain->yprd*domain->zprd, domain->xprd, domain->yprd, domain->zprd);
   int nlocal = atom->nlocal;
@@ -1590,6 +1628,22 @@ void FixDPPimd::qc_step(){
   //   printf("end qc_step, v:\n");
   //   printf("vnorm1: %.16e\n", vnorm1);
   //   printf("vnorm2: %.16e\n", vnorm2);
+
+  //   double xnorm1 = 0.0, xnorm2 = 0.0; 
+  //   for(int i=0; i<atom->nlocal; i++)
+  //   {
+  //     for(int j=0; j<3; j++)
+  //     {
+  //       xnorm1 += atom->v[i][j];
+  //       xnorm2 += atom->v[i][j] * atom->v[i][j];
+  //     }
+  //   }
+
+  //   printf("end qc_step, x:\n");
+  //   printf("xnorm1: %.16e\n", xnorm1);
+  //   printf("xnorm2: %.16e\n", xnorm2);
+  // }
+}
 
   //   double xnorm1 = 0.0, xnorm2 = 0.0; 
   //   for(int i=0; i<atom->nlocal; i++)
