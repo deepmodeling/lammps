@@ -550,7 +550,6 @@ void FixDPPimd::setup(int vflag)
   // printf("setup, m = %.4e\n", mass[1]);
   if(mapflag){
     for(int i=0; i<nlocal; i++)
-<<<<<<< HEAD
     {
       domain->unmap(x[i], image[i]);
     }
@@ -593,50 +592,6 @@ void FixDPPimd::setup(int vflag)
       domain->unmap_inv(x[i], image[i]);
     }
   }
-=======
-    {
-      domain->unmap(x[i], image[i]);
-    }
-  }
-  if(method==NMPIMD)
-  {
-    MPI_Barrier(universe->uworld);
-    nmpimd_fill(atom->x);
-    MPI_Barrier(universe->uworld);
-    comm_exec(atom->x);
-    MPI_Barrier(universe->uworld);
-    nmpimd_transform(buf_beads, atom->x, M_x2xp[universe->iworld]);
-  }
-  compute_spring_energy();
-  if(method==NMPIMD)
-  {
-    MPI_Barrier(universe->uworld);
-    nmpimd_fill(atom->x);
-    MPI_Barrier(universe->uworld);
-    comm_exec(atom->x);
-    MPI_Barrier(universe->uworld);
-    nmpimd_transform(buf_beads, atom->x, M_xp2x[universe->iworld]);
-  }
-
-  if(method==NMPIMD)
-  {
-    MPI_Barrier(universe->uworld);
-    nmpimd_fill(atom->v);
-    MPI_Barrier(universe->uworld);
-    comm_exec(atom->v);
-    MPI_Barrier(universe->uworld);
-    nmpimd_transform(buf_beads, atom->v, M_x2xp[universe->iworld]);
-  }
-  compute_xc();
-  update_x_unwrap();
-  if(mapflag)
-  {
-    for(int i=0; i<nlocal; i++)
-    {
-      domain->unmap_inv(x[i], image[i]);
-    }
-  }
->>>>>>> beads
   // printf("setting up %d\n", vflag);
   if(universe->me==0 && screen) fprintf(screen,"Setting up Path-Integral ...\n");
   if(universe->me==0) printf("Setting up Path-Integral ...\n");
@@ -693,11 +648,8 @@ void FixDPPimd::initial_integrate(int /*vflag*/)
     double vnorm1 = 0.0, vnorm2 = 0.0, vnorm1a = 0.0; 
     double xnorm1 = 0.0, xnorm2 = 0.0, xnorm1a = 0.0; 
 
-<<<<<<< HEAD
-=======
   // t_current = c_temp->compute_scalar();
   // printf("me = %d, initial\n", universe->me);
->>>>>>> beads
   // unmap the atom coordinates and image flags so that the ring polymer is not wrapped
   int nlocal = atom->nlocal;
   tagint *tag = atom->tag;
@@ -1143,64 +1095,6 @@ void FixDPPimd::update_x_unwrap()
 
 void FixDPPimd::post_force(int /*flag*/)
 {
-<<<<<<< HEAD
-  int nlocal = atom->nlocal;
-  tagint *tag = atom->tag;
-  double **x = atom->x;
-  imageint *image = atom->image;
-  if(mapflag){
-    for(int i=0; i<nlocal; i++)
-    {
-      domain->unmap(x[i], image[i]);
-    }
-  }
-  MPI_Barrier(universe->uworld);
-  update_x_unwrap();
-  MPI_Barrier(universe->uworld);
-  compute_xc();
-  if(mapflag)
-  {
-    for(int i=0; i<nlocal; i++)
-    {
-      domain->unmap_inv(x[i], image[i]);
-    }
-  }
-    // double fnorm1 = 0.0, fnorm2 = 0.0, fnorm1a = 0.0; 
-    // fnorm1 = fnorm1a = fnorm2 = 0.0;
-    // for(int i=0; i<atom->nlocal; i++)
-    // {
-    //   for(int j=0; j<3; j++)
-    //   {
-    //     fnorm1 += atom->f[i][j];
-    //     fnorm1a += abs(atom->f[i][j]);
-    //     fnorm2 += atom->f[i][j] * atom->f[i][j];
-    //   }
-    // }
-
-    // printf("checking f for step %d iworld %d\n", update->ntimestep, universe->iworld);
-    // printf("starting post_force, f:\n");
-    // printf("fnorm1: %.30e\n", fnorm1);
-    // printf("fnorm1a: %.30e\n", fnorm1a);
-    // printf("iworld = %d, fnorm2: %.30e\n", universe->iworld, fnorm2);
-
-    // double fsnorm1 = 0.0, fsnorm2 = 0.0, fsnorm1a = 0.0; 
-    // fsnorm1 = fsnorm1a = fsnorm2 = 0.0;
-    // for(int i=0; i<atom->nlocal+atom->nghost; i++)
-    // {
-    //   for(int j=0; j<3; j++)
-    //   {
-    //     fsnorm1 += atom->f[i][j];
-    //     fsnorm1a += abs(atom->f[i][j]);
-    //     fsnorm2 += atom->f[i][j] * atom->f[i][j];
-    //   }
-    // }
-    // printf("fsnorm1: %.30e\n", fsnorm1);
-    // printf("fsnorm1a: %.30e\n", fsnorm1a);
-    // printf("iworld = %d, fsnorm2: %.30e\n", universe->iworld, fsnorm2);
-
-  // unmap the atom coordinates and image flags so that the ring polymer is not wrapped
-=======
->>>>>>> beads
   int nlocal = atom->nlocal;
   tagint *tag = atom->tag;
   double **x = atom->x;
@@ -1523,49 +1417,6 @@ void FixDPPimd::b_step()
   //     vnorm2 += atom->v[i][j] * atom->v[i][j];
   //   }
   // }
-<<<<<<< HEAD
-
-  // printf("end b_step, v:\n");
-  // printf("vnorm1: %.16e\n", vnorm1);
-  // printf("vnorm2: %.16e\n", vnorm2);
-
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixDPPimd::v_press_step(){
-  // printf("vw = %.30e\nfactor = %.30e\n", vw, vw * (1 + 1. / atom->natoms));
-  int nlocal = atom->nlocal;
-  double **v = atom->v;
-  // if(universe->iworld == 0)
-  // {
-    // double expv = exp(-0.25 * dtv * vw * (1 + 1. / atom->natoms / np));
-    double expv = exp(-0.5 * dtv * vw * (1 + 1. / atom->natoms / np));
-    for(int i=0; i<nlocal; i++)
-    {
-      for(int j=0; j<3; j++)
-      {
-        // v[i][j] = exp(-dtv * vw * (1 + 1. / atom->natoms)) * v[i][j];
-        v[i][j] = expv * v[i][j];
-        // v[i][j] = expv * v[i][j];
-      } 
-    }       
-  // }
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixDPPimd::x_press_step(){
-  // if(universe->iworld == 0)
-  // {
-  //   for(int j=0; j<3; j++)
-  //   {
-  //     vnorm1 += atom->v[i][j];
-  //     vnorm2 += atom->v[i][j] * atom->v[i][j];
-  //   }
-  // }
-=======
->>>>>>> beads
 
   // printf("end b_step, v:\n");
   // printf("vnorm1: %.16e\n", vnorm1);
@@ -1750,99 +1601,6 @@ void FixDPPimd::qc_step(){
         domain->yprd *= expq;
         domain->zprd *= expq;
 
-<<<<<<< HEAD
-    if(universe->iworld == 0)
-    {
-      // domain->lamda2x(nlocal);
-    }
-
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixDPPimd::qc_step(){
-  // if(universe->iworld==0) printf("\nstart qc_step, vol = %.30e\n h = (%.8e %.8e %.8e)\n", domain->xprd*domain->yprd*domain->zprd, domain->xprd, domain->yprd, domain->zprd);
-  int nlocal = atom->nlocal;
-  double **x = atom->x;
-  double **v = atom->v;
-  tagint *tag = atom->tag;
-
-  // if(universe->iworld==0) 
-  // {
-  // printf("start qc_step, x:\n");
-=======
-      }
-    }    
-
-      MPI_Barrier(universe->uworld);
-      MPI_Bcast(&domain->xprd, 1, MPI_DOUBLE, 0, universe->uworld);
-      MPI_Bcast(&domain->yprd, 1, MPI_DOUBLE, 0, universe->uworld);
-      MPI_Bcast(&domain->zprd, 1, MPI_DOUBLE, 0, universe->uworld);
-
-      domain->boxlo[0] = -0.5*domain->xprd;
-      domain->boxlo[1] = -0.5*domain->yprd;
-      domain->boxlo[2] = -0.5*domain->zprd;
-      domain->boxhi[0] = 0.5*domain->xprd;
-      domain->boxhi[1] = 0.5*domain->yprd;
-      domain->boxhi[2] = 0.5*domain->zprd;
-
-      domain->set_global_box();
-      domain->set_local_box();
-  }
-
-  // if(universe->iworld==0) printf("\nend qc_step, vol = %.30e\n h = (%.8e %.8e %.8e)\n", domain->xprd*domain->yprd*domain->zprd, domain->xprd, domain->yprd, domain->zprd);
-  // printf("\niworld = %d, end qc_step, vol = %.30e\n h = (%.8e %.8e %.8e)\n", universe->iworld, domain->xprd*domain->yprd*domain->zprd, domain->xprd, domain->yprd, domain->zprd);
-  // if(universe->iworld==0) printf("end qc_step, vol = %.8e h = (%.8e %.8e %.8e)\n\n", domain->xprd*domain->yprd*domain->zprd, domain->xprd, domain->yprd, domain->zprd);
-  // if(universe->iworld==0) printf("end qc_step, x:\n");
-  // if(universe->iworld==0) {
->>>>>>> beads
-  // for(int i=0; i<nlocal; i++)
-  // {
-    // printf("%ld  ", tag[i]);
-    // for(int j=0; j<3; j++)
-    // {
-      // printf("%.8e  ", x[i][j]);
-  //   }
-  //   printf("\n");
-  // }
-  // printf("\n");
-  // }
-
-<<<<<<< HEAD
-  if(!pextflag) {
-    if(universe->iworld == 0)
-    {
-
-      //fprintf(stdout, "executing qc_step, iworld=%ld.\n", universe->iworld);
-      for(int i=0; i<nlocal; i++)
-      {
-        x[i][0] += dtv * v[i][0];
-        x[i][1] += dtv * v[i][1];
-        x[i][2] += dtv * v[i][2];
-      }
-      //fprintf(stdout, "iworld=%lld, x=%.6f.\n", universe->iworld, x[0][0]);
-    }
-  }
-  else{
-    if(universe->iworld == 0)
-    {
-      // printf("vw = %.30e\n", vw);
-      double expq = exp(dtv * vw);
-      double expp = exp(-dtv * vw);
-      if(barostat == BZP)
-      {
-        for(int i=0; i<nlocal; i++)
-        {
-          for(int j=0; j<3; j++)
-          {
-            x[i][j] = expq * x[i][j] + (expq - expp) / 2. / vw * v[i][j];
-            v[i][j] = expp * v[i][j];
-          } 
-        }
-        domain->xprd *= expq;
-        domain->yprd *= expq;
-        domain->zprd *= expq;
-
       }
     }    
 
@@ -1891,20 +1649,6 @@ void FixDPPimd::qc_step(){
   //     }
   //   }
 
-=======
-  // if(universe->iworld == 0)
-  // {
-  //   double vnorm1 = 0.0, vnorm2 = 0.0; 
-  //   for(int i=0; i<atom->nlocal; i++)
-  //   {
-  //     for(int j=0; j<3; j++)
-  //     {
-  //       vnorm1 += atom->v[i][j];
-  //       vnorm2 += atom->v[i][j] * atom->v[i][j];
-  //     }
-  //   }
-
->>>>>>> beads
   //   printf("end qc_step, v:\n");
   //   printf("vnorm1: %.16e\n", vnorm1);
   //   printf("vnorm2: %.16e\n", vnorm2);
@@ -1923,25 +1667,6 @@ void FixDPPimd::qc_step(){
   //   printf("xnorm1: %.16e\n", xnorm1);
   //   printf("xnorm2: %.16e\n", xnorm2);
   // }
-<<<<<<< HEAD
-}
-
-  //   double xnorm1 = 0.0, xnorm2 = 0.0; 
-  //   for(int i=0; i<atom->nlocal; i++)
-  //   {
-  //     for(int j=0; j<3; j++)
-  //     {
-  //       xnorm1 += atom->v[i][j];
-  //       xnorm2 += atom->v[i][j] * atom->v[i][j];
-  //     }
-  //   }
-
-  //   printf("end qc_step, x:\n");
-  //   printf("xnorm1: %.16e\n", xnorm1);
-  //   printf("xnorm2: %.16e\n", xnorm2);
-  // }
-=======
->>>>>>> beads
 }
 
 /* ---------------------------------------------------------------------- */
@@ -2957,8 +2682,4 @@ double FixDPPimd::compute_vector(int n)
   // if(n==10) {return Pext * volume;}
   if(n==12) {return totenthalpy;}
   return 0.0;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> beads
