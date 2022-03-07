@@ -2677,7 +2677,7 @@ double FixDPPimd::compute_vector(int n)
   // if(n==8) { return p_vir; }
   if(n==9) { return p_cv; }
   if(n==10) { return vw; }
-  if(n==11) { return 1.5*W*vw*vw; }
+  if(n==11) { return 0.5*W*vw*vw; }
   //if(pextflag) size_vector = 11;
   // if(n==10) {return Pext * volume;}
   if(n==12) {return totenthalpy;}
