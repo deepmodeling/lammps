@@ -106,7 +106,7 @@ FixDPPimd::FixDPPimd(LAMMPS *lmp, int narg, char **arg) :
       else if(strcmp(arg[i+1], "nvt")==0) ensemble=nvt;
       else if(strcmp(arg[i+1], "nph")==0) {ensemble=nph; pextflag=1;}
       else if(strcmp(arg[i+1], "npt")==0) {ensemble=npt; pextflag=1;}
-      else error->universe_all(FLERR, "Unknown ensemble parameter for fix pimd. Only nve and nvt ensembles are supported!");
+      else error->universe_all(FLERR, "Unknown ensemble parameter for fix pimd. Only nve ,nvt, nph, and npt ensembles are supported!");
     }
 
     else if(strcmp(arg[i],"fmass")==0)
